@@ -1,0 +1,14 @@
+{
+  "name": "xss-prototype",
+  "version": "1.0.0",
+  "description": "Prototipo educacional de XSS (Refletido, Armazenado e DOM) inspirado no OWASP Juice Shop",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dompurify": "^3.1.6",
+    "jsdom": "^24.1.1"
+  }
+}

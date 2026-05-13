@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>XSS Refletido - {{MODE}}</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <h1>XSS Refletido <span class="badge {{BADGE_CLASS}}">{{MODE}}</span></h1>
+  </header>
+  <main>
+    <a class="back" href="/">&larr; Voltar</a>
+    <section class="card">
+      <p>Digite uma busca. O texto sera devolvido na pagina.</p>
+      <form method="GET" action="{{ACTION}}">
+        <input type="text" name="q" placeholder="Pesquisar..." autofocus>
+        <button type="submit">Buscar</button>
+      </form>
+      <h3>Resultado da busca por:</h3>
+      <div class="result">{{QUERY_RAW}}</div>
+    </section>
+    <section class="card">
+      <h3>Tente este payload</h3>
+      <pre>&lt;script&gt;alert('XSS Refletido')&lt;/script&gt;</pre>
+      <p>Na versao corrigida, o navegador exibe o texto literalmente em vez de executar.</p>
+    </section>
+  </main>
+</body>
+</html>
