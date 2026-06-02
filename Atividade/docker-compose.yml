@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # Ambiente 1 — Juice Shop original (propositalmente vulnerável)
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: juice-shop-vulneravel
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  # Ambiente 2 — Juice Shop com defesas XSS aplicadas
+  juice-shop-secure:
+    build:
+      context: ./juice-shop-secure
+      dockerfile: Dockerfile
+    container_name: juice-shop-seguro
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  # Ambiente 3 — Central de Comando (servidor C2 do atacante)
+  command-center:
+    build:
+      context: ./command-center
+      dockerfile: Dockerfile
+    container_name: central-de-comando
+    ports:
+      - "4000:4000"
+    restart: unless-stopped

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avaliações — Juice Shop Seguro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        🥤 <span>OWASP Juice Shop</span>
+        <span class="badge-secure">🔒 VERSÃO SEGURA</span>
+      </div>
+      <nav>
+        <a href="/">Início</a>
+        <a href="/search?q=">Busca</a>
+        <a href="/reviews">Avaliações</a>
+        <a href="/dom">DOM</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-title">
+      <div>
+        <h1>⭐ Avaliações de Produtos</h1>
+        <p>XSS Armazenado — conteúdo salvo com escape aplicado na renderização</p>
+      </div>
+      <span class="xss-type-badge">XSS ARMAZENADO</span>
+    </div>
+
+    <div class="form-card">
+      <h2>Deixe sua Avaliação</h2>
+      <form method="POST" action="/reviews">
+        <div class="form-group">
+          <label for="author">Nome (máx. 80 caracteres)</label>
+          <input
+            type="text"
+            id="author"
+            name="author"
+            maxlength="80"
+            placeholder="Tente: &lt;script&gt;alert('XSS')&lt;/script&gt;"
+            required
+          >
+        </div>
+        <div class="form-group">
+          <label for="text">Avaliação (máx. 400 caracteres)</label>
+          <textarea
+            id="text"
+            name="text"
+            maxlength="400"
+            placeholder="Tente: &lt;img src=x onerror=alert(document.cookie)&gt;"
+            required
+          ></textarea>
+        </div>
+        <div class="form-row">
+          <button type="submit" class="btn btn-primary">Enviar Avaliação</button>
+        </div>
+      </form>
+    </div>
+
+    <section>
+      <h2>Avaliações Enviadas</h2>
+      <div class="reviews-list">
+        {{REVIEWS}}
+      </div>
+      <div class="security-notice">
+        🛡️ Mesmo que um payload XSS seja enviado, ele é armazenado como texto puro e escapado na renderização — nunca interpretado como HTML pelo navegador.
+      </div>
+      <br>
+      <form method="POST" action="/reviews/reset" style="display:inline">
+        <button type="submit" class="btn btn-danger">Limpar todas as avaliações</button>
+      </form>
+    </section>
+
+    <div class="security-panel">
+      <h2>🛡️ Defesas Aplicadas Aqui</h2>
+      <div class="defense-list">
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Escape na Renderização</strong>
+            <span>Os dados são escapados no momento de construir o HTML, não na entrada — a abordagem correta para persistência.</span>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Limite de Comprimento</strong>
+            <span>Nome: 80 chars, texto: 400 chars — reduz superfície de ataque e previne buffer overflow em strings.</span>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>CSP como Camada Extra</strong>
+            <span><code>script-src 'self'</code> bloqueia qualquer script inline, mesmo que o escape seja bypassado.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Projeto Acadêmico — Segurança de Sistemas &nbsp;|&nbsp; OWASP Juice Shop Seguro</p>
+  </footer>
+</body>
+</html>

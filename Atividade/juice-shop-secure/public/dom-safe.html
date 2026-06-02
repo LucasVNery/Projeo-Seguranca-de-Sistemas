@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOM XSS — Juice Shop Seguro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        🥤 <span>OWASP Juice Shop</span>
+        <span class="badge-secure">🔒 VERSÃO SEGURA</span>
+      </div>
+      <nav>
+        <a href="/">Início</a>
+        <a href="/search?q=">Busca</a>
+        <a href="/reviews">Avaliações</a>
+        <a href="/dom">DOM</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-title">
+      <div>
+        <h1>🌐 Manipulação DOM</h1>
+        <p>XSS Baseado em DOM — usando textContent em vez de innerHTML</p>
+      </div>
+      <span class="xss-type-badge">XSS DOM-BASED</span>
+    </div>
+
+    <div class="dom-demo">
+      <h2 style="color:#1b5e20;margin-bottom:12px;font-size:1.05rem">Filtro de Categoria via URL fragment</h2>
+      <p>
+        O fragment da URL (<code>#categoria</code>) é lido pelo JavaScript e exibido na tela.
+        Altere o fragment na barra de endereços para ver o resultado.<br>
+        Tente: <code>#Sucos</code> ou o payload <code>#&lt;img src=x onerror=alert(1)&gt;</code>
+      </p>
+      <label>Categoria atual:</label>
+      <div id="output" class="dom-output">Nenhuma categoria selecionada.</div>
+      <div class="url-demo">URL: <span id="url-text"></span></div>
+    </div>
+
+    <section>
+      <h2>Comparação: Vulnerável vs Seguro</h2>
+      <div class="compare-grid">
+        <div class="compare-card danger">
+          <h3>❌ Código Vulnerável</h3>
+          <pre class="code-block">// innerHTML EXECUTA HTML arbitrário
+const filter = location.hash.slice(1);
+document.getElementById('output')
+  .innerHTML = decodeURIComponent(filter);
+
+// Payload na URL:
+// page.html#&lt;img src=x onerror=alert(1)&gt;
+// → cria elemento real, dispara onerror</pre>
+          <p>O payload no fragment é interpretado como HTML e executa o handler de evento.</p>
+        </div>
+        <div class="compare-card safe">
+          <h3>✅ Código Seguro (este arquivo)</h3>
+          <pre class="code-block">// textContent trata tudo como texto puro
+const filter = location.hash.slice(1);
+document.getElementById('output')
+  .textContent = decodeURIComponent(filter);
+
+// O mesmo payload:
+// → exibido literalmente como string
+// → nenhum HTML é processado</pre>
+          <p>textContent escapa automaticamente qualquer HTML — nenhuma tag é criada.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="security-panel">
+      <h2>🛡️ Defesas Aplicadas Aqui</h2>
+      <div class="defense-list">
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>textContent em vez de innerHTML</strong>
+            <span>O DOM interpreta o valor como texto puro — tags HTML nunca são processadas.</span>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Content Security Policy</strong>
+            <span><code>script-src 'self'</code> bloqueia handlers inline como <code>onerror</code> e <code>onclick</code>.</span>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Sem eval() ou Function()</strong>
+            <span>Nenhuma construção dinâmica de código no cliente — sem superfície para injeção lógica.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Projeto Acadêmico — Segurança de Sistemas &nbsp;|&nbsp; OWASP Juice Shop Seguro</p>
+  </footer>
+
+  <script src="/dom-safe.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Busca — Juice Shop Seguro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        🥤 <span>OWASP Juice Shop</span>
+        <span class="badge-secure">🔒 VERSÃO SEGURA</span>
+      </div>
+      <nav>
+        <a href="/">Início</a>
+        <a href="/search?q=">Busca</a>
+        <a href="/reviews">Avaliações</a>
+        <a href="/dom">DOM</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-title">
+      <div>
+        <h1>🔍 Busca de Produtos</h1>
+        <p>XSS Refletido — entrada refletida com escape de saída aplicado</p>
+      </div>
+      <span class="xss-type-badge">XSS REFLETIDO</span>
+    </div>
+
+    <div class="search-wrapper">
+      <form method="GET" action="/search" autocomplete="off">
+        <div class="search-input-row">
+          <input
+            type="text"
+            name="q"
+            value="{{QUERY}}"
+            placeholder="Tente: &lt;script&gt;alert(1)&lt;/script&gt;"
+            autofocus
+          >
+          <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+      </form>
+
+      <div style="display:{{HAS_QUERY}}">
+        <div class="search-result">
+          Você pesquisou por: <strong>{{QUERY}}</strong>
+          <br><br>
+          <span style="color:#546e7a">Nenhum produto encontrado para este termo.</span>
+        </div>
+        <div class="security-notice">
+          🛡️ O payload foi escapado pelo servidor — <code>&lt;script&gt;</code> vira
+          <code>&amp;lt;script&amp;gt;</code> no HTML. O navegador renderiza como texto, não executa como código.
+        </div>
+      </div>
+    </div>
+
+    <div class="security-panel">
+      <h2>🛡️ Defesas Aplicadas Aqui</h2>
+      <div class="defense-list">
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Escape de Saída (Output Encoding)</strong>
+            <span>A função <code>escapeHtml()</code> converte <code>&lt; &gt; &amp; " '</code> em entidades HTML antes de inserir no template.</span>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Content Security Policy</strong>
+            <span><code>script-src 'self'</code> — mesmo que o escape falhasse, o CSP bloquearia qualquer script inline.</span>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>X-XSS-Protection</strong>
+            <span>Header ativado como camada adicional para browsers legados.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Projeto Acadêmico — Segurança de Sistemas &nbsp;|&nbsp; OWASP Juice Shop Seguro</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juice Shop Seguro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        🥤 <span>OWASP Juice Shop</span>
+        <span class="badge-secure">🔒 VERSÃO SEGURA</span>
+      </div>
+      <nav>
+        <a href="/">Início</a>
+        <a href="/search?q=">Busca</a>
+        <a href="/reviews">Avaliações</a>
+        <a href="/dom">DOM</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Demonstração de Defesas XSS</h1>
+      <p>
+        Esta versão implementa defesas contra os três tipos de XSS.
+        Para comparar com o ambiente vulnerável, acesse
+        <a href="http://localhost:3000" target="_blank" rel="noopener">http://localhost:3000</a>.
+      </p>
+    </div>
+
+    <section>
+      <h2>🎯 Cenários de Ataque</h2>
+      <div class="demo-grid">
+        <a href="/search?q=" class="demo-card">
+          <div class="card-icon">🔍</div>
+          <h3>XSS Refletido</h3>
+          <p>Barra de busca que reflete a entrada do usuário — com escape de saída aplicado.</p>
+          <span class="card-tag">GET /search?q=</span>
+        </a>
+        <a href="/reviews" class="demo-card">
+          <div class="card-icon">⭐</div>
+          <h3>XSS Armazenado</h3>
+          <p>Avaliações de produtos persistidas no servidor — com sanitização e escape na renderização.</p>
+          <span class="card-tag">POST /reviews</span>
+        </a>
+        <a href="/dom" class="demo-card">
+          <div class="card-icon">🌐</div>
+          <h3>XSS Baseado em DOM</h3>
+          <p>Manipulação do DOM via fragment da URL — usando textContent em vez de innerHTML.</p>
+          <span class="card-tag">URL #fragment</span>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2>🛒 Produtos</h2>
+      <div class="product-grid">
+        <div class="product-card">
+          <span class="product-icon">🍊</span>
+          <h4>Suco de Laranja</h4>
+          <div class="price">R$ 7,99</div>
+        </div>
+        <div class="product-card">
+          <span class="product-icon">🍋</span>
+          <h4>Suco de Limão</h4>
+          <div class="price">R$ 6,49</div>
+        </div>
+        <div class="product-card">
+          <span class="product-icon">🍎</span>
+          <h4>Suco de Maçã</h4>
+          <div class="price">R$ 8,99</div>
+        </div>
+        <div class="product-card">
+          <span class="product-icon">🥭</span>
+          <h4>Suco de Manga</h4>
+          <div class="price">R$ 9,49</div>
+        </div>
+        <div class="product-card">
+          <span class="product-icon">🍇</span>
+          <h4>Suco de Uva</h4>
+          <div class="price">R$ 8,29</div>
+        </div>
+        <div class="product-card">
+          <span class="product-icon">🥥</span>
+          <h4>Água de Coco</h4>
+          <div class="price">R$ 5,99</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="security-panel">
+        <h2>🛡️ Defesas Ativas Nesta Aplicação</h2>
+        <div class="defense-list">
+          <div class="defense-item">
+            <span class="check">✅</span>
+            <div class="defense-info">
+              <strong>Content Security Policy (CSP)</strong>
+              <span>Bloqueia scripts inline e de origens externas. Impede execução mesmo que o payload seja injetado.</span>
+            </div>
+          </div>
+          <div class="defense-item">
+            <span class="check">✅</span>
+            <div class="defense-info">
+              <strong>Escape de Saída (Output Encoding)</strong>
+              <span>Todos os dados do usuário são convertidos para entidades HTML antes de renderizar.</span>
+            </div>
+          </div>
+          <div class="defense-item">
+            <span class="check">✅</span>
+            <div class="defense-info">
+              <strong>Cookie HttpOnly + SameSite</strong>
+              <span>JavaScript não consegue ler o cookie de sessão. SameSite previne ataques CSRF.</span>
+            </div>
+          </div>
+          <div class="defense-item">
+            <span class="check">✅</span>
+            <div class="defense-info">
+              <strong>X-Frame-Options: DENY</strong>
+              <span>Impede que a aplicação seja embutida em iframes (proteção contra clickjacking).</span>
+            </div>
+          </div>
+          <div class="defense-item">
+            <span class="check">✅</span>
+            <div class="defense-info">
+              <strong>X-Content-Type-Options: nosniff</strong>
+              <span>Impede que o navegador adivinhe o tipo MIME do conteúdo.</span>
+            </div>
+          </div>
+          <div class="defense-item">
+            <span class="check">✅</span>
+            <div class="defense-info">
+              <strong>textContent no DOM</strong>
+              <span>O JavaScript do cliente usa textContent em vez de innerHTML para inserir dados dinâmicos.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Projeto Acadêmico — Segurança de Sistemas &nbsp;|&nbsp; OWASP Juice Shop Seguro</p>
+  </footer>
+</body>
+</html>

