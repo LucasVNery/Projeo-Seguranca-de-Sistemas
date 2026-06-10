@@ -129,6 +129,13 @@ app.get('/dom', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dom-safe.html'));
 });
 
+// Keylogger — seguro: o XSS que instalaria o listener nunca executa.
+// A página demonstra que, sem execução de script injetado (CSP + escape),
+// não há como registrar um keydown listener para exfiltrar teclas.
+app.get('/keylog', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'keylog-safe.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`\n Juice Shop Seguro rodando em http://localhost:${PORT}\n`);
 });

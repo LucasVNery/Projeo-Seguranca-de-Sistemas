@@ -183,8 +183,14 @@ section > h2 {
   box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
 .defense-item .check { color: #2e7d32; font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.defense-item .defense-info { min-width: 0; flex: 1; }
 .defense-item .defense-info strong { display: block; color: #0d47a1; font-size: 0.88rem; margin-bottom: 3px; }
 .defense-item .defense-info span { color: #546e7a; font-size: 0.8rem; line-height: 1.4; }
+
+/* Item de defesa que contém código ocupa a linha inteira do grid,
+   para o bloco caber sem sobrepor os cards vizinhos */
+.defense-item:has(.code-block) { grid-column: 1 / -1; }
+.defense-item .code-block { margin-top: 8px; max-width: 100%; }
 
 /* ── Forms ── */
 .form-card {
@@ -348,3 +354,64 @@ footer {
   nav { display: none; }
   .page-title { flex-direction: column; align-items: flex-start; }
 }
+
+/* ── Bloco de payload de demonstração (copiar e colar) ── */
+.payload-box {
+  background: #0d1117;
+  border: 1px solid #d32f2f;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.payload-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #1a1f27;
+  border-bottom: 1px solid #2a2f37;
+}
+.payload-box-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ff6b6b;
+}
+.payload-code {
+  margin: 0;
+  padding: 12px 14px;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.78rem;
+  color: #aed581;
+  background: #0d1117;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+}
+.payload-box-note {
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  color: #90a4ae;
+  background: #11161d;
+  border-top: 1px solid #2a2f37;
+}
+.payload-box-note code {
+  background: #1f2630;
+  color: #aed581;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.btn-copy {
+  background: #1b5e20;
+  color: #e8f5e9;
+  border: 1px solid #2e7d32;
+  padding: 5px 16px;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+.btn-copy:hover { background: #2e7d32; }
+.btn-copy.copied { background: #66bb6a; color: #0d1117; }

