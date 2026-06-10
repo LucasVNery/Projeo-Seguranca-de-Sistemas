@@ -361,7 +361,7 @@ main {
 .capture-ip   { font-size: 0.7rem; color: var(--muted); font-family: var(--font-mono); }
 
 .capture-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
-.capture-row { display: flex; gap: 8px; align-items: flex-start; font-size: 0.78rem; }
+.capture-row { display: flex; gap: 8px; align-items: flex-start; font-size: 0.78rem; min-width: 0; }
 .capture-key {
   color: var(--muted);
   font-family: var(--font-mono);
@@ -375,6 +375,9 @@ main {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   word-break: break-all;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1;
   line-height: 1.5;
 }
 .capture-val.highlight { color: var(--green); }
